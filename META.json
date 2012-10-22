@@ -1,0 +1,40 @@
+{
+   "name": "pg2podg",
+   "abstract": "An extension for two-player open deterministic games",
+   "description": "This extension provides tools to play two-player games that are open (i.e. the full state of the game is visible to all players) and deterministic. Some examples: Chess, Nim, XOX.",
+   "version": "0.1.0",
+   "maintainer": [
+      "Gianni Ciolli <gianni.ciolli@2ndQuadrant.it>"
+   ],
+   "license": "gpl_3",
+   "provides": {
+      "pgchess": {
+         "abstract": "An extension for two-player open deterministic games",
+         "file": "sql/pg2podg.sql",
+         "docfile": "doc/README.txt",
+         "version": "0.1.0"
+      }
+   },
+   "prereqs": {
+      "runtime": {
+         "requires": {
+            "PostgreSQL": "9.1.0"
+         }
+      }
+   },
+   "resources": {
+      "repository": {
+        "url":  "git://github.com/gciolli/pg2podg.git",
+        "web":  "http://github.com/gciolli/pg2podg/",
+        "type": "git"
+      }
+   },
+   "generated_by": "Gianni Ciolli",
+   "meta-spec": {
+      "version": "1.0.0",
+      "url": "http://pgxn.org/meta/spec.txt"
+   },
+   "tags": [
+      "games"
+   ]
+}

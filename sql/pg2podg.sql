@@ -214,13 +214,6 @@ SELECT c.*, %% g.game AS txtid
 FROM choices c
 JOIN games g ON c.game = g.id;
 
-CREATE TABLE choices_archive
-( t timestamp with time zone DEFAULT statement_timestamp()
-, game bigint
-, total_gain double precision
-, gains text[]
-);
-
 CREATE FUNCTION array_sum(double precision[])
 RETURNS double precision
 LANGUAGE SQL
@@ -240,8 +233,6 @@ CREATE FUNCTION evaluate_choices
 LANGUAGE plpgsql
 AS $BODY$
 BEGIN
-	INSERT INTO choices_archive(game,total_gain,gains)
-	SELECT * FROM choices;
 	TRUNCATE choices;
 	WITH RECURSIVE
 	cone(id,parent,choice,gain,game,depth,multiplier) AS (

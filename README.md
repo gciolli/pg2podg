@@ -1,4 +1,4 @@
-pg2podg 0.1.0
+pg2podg 0.1.1
 =============
 
 pg2podg is a PostgreSQL 9.1+ extension for two-player open deterministic
@@ -57,6 +57,18 @@ created the pgchess extension.
 
 Both pgchess and pg2podg are available via [the PostgreSQL Extension
 Network](http://pgxn.org).
+
+Upgrades from previous versions
+-------------------------------
+
+Currently the only way to upgrade from a previous version of pg2podg is
+to drop the extension, uninstall the old version, install the new
+version and finally (re)create the extension.
+
+The pg2podg extension contains two persistent tables `games` and
+`gains`, whose contents are not preserved by the above procedure; future
+versions of pg2podg will provide facilities to allow the user to export
+and import their contents.
 
 Copyright and Licence
 ---------------------

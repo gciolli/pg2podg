@@ -2,7 +2,7 @@
    "name": "pg2podg",
    "abstract": "An extension for two-player open deterministic games",
    "description": "This extension provides tools to play two-player games that are open (i.e. the full state of the game is visible to all players) and deterministic. Some examples: Chess, Nim, XOX.",
-   "version": "0.1.1",
+   "version": "0.1.2",
    "maintainer": [
       "Gianni Ciolli <gianni.ciolli@2ndQuadrant.it>"
    ],
@@ -12,7 +12,7 @@
          "abstract": "An extension for two-player open deterministic games",
          "file": "sql/pg2podg.sql",
          "docfile": "doc/README.txt",
-         "version": "0.1.1"
+         "version": "0.1.2"
       }
    },
    "prereqs": {

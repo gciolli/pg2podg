@@ -235,61 +235,100 @@ AS $BODY$
 BEGIN
 	TRUNCATE choices;
 	WITH RECURSIVE
-	cone(id,parent,choice,gain,game,depth,multiplier) AS (
-	  SELECT games.id
-	  , games.parent
-	  , games.id AS choice
-	  , gains.gain
-	  , games.game
+	--
+	-- (1) compute the cone of required games
+	--
+	cone(id,parent,depth) AS (
+	  SELECT id
+	  , parent
 	  , 1 :: int AS depth
-	  , -0.9 :: double precision AS multiplier
 	  FROM games
-	  LEFT JOIN gains ON games.id = gains.id
-	  WHERE games.parent = start_game
+	  WHERE parent = start_game
 	UNION ALL
-	  SELECT t.id
-	  , t.parent
-	  , c.choice
-	  , c.gain
-	    + CASE
-	      -- special case [- W] == [L]
-	      WHEN c.depth = 1 AND t.gain = double precision 'Infinity'
-	      THEN double precision '-Infinity'
-	      -- general case [- ...]
-	      ELSE c.multiplier
-	           * CASE t.gain
-		     WHEN double precision 'Infinity' THEN 10
-		     ELSE t.gain
-		     END
-	      END
-	    AS gain
-	  , t.game
-	  , c.depth + 1 AS depth
-	  , c.multiplier * (-0.9) AS multiplier
-	  FROM (SELECT games.*, gains.gain
-	        FROM games
-		LEFT JOIN gains
-		       ON games.id = gains.id) t
-	  JOIN cone c ON t.parent = c.id
-	  WHERE t.gain != double precision 'NaN'
-	  AND c.depth < depth_target
-	), paths AS (
-	  SELECT p.id
-	  , p.choice
-	  , p.gain
-	  , p.game
+	  SELECT c.id
+	  , c.parent
+	  , p.depth + 1 AS depth
 	  FROM cone p
-	  LEFT JOIN cone c ON c.parent = p.id
-	  WHERE c.id IS NULL
+	  JOIN games c ON c.parent = p.id
+	  WHERE p.depth < depth_target
+	--
+	-- (2) compute g0(cone), reusing any previous computation and
+	--     saving any new computation for later reuse
+	--
+	), g0_hit(id, g0) AS (
+	  SELECT cone.id
+	  , gains.gain
+	  FROM cone
+	  JOIN gains ON cone.id = gains.id
+	), g0_miss(id, g0) AS (
+	  INSERT INTO gains(id, gain)
+	  SELECT a.id
+	  , score(games.game) AS g0
+	  FROM (
+	    SELECT cone.id
+	    FROM cone
+	    LEFT JOIN gains ON cone.id = gains.id
+	    WHERE gains.id IS NULL
+	  ) a JOIN games ON a.id = games.id
+	  RETURNING *
+	), g0 AS (
+	  SELECT id, g0 FROM g0_hit
+	  UNION ALL
+	  SELECT id, g0 FROM g0_miss
+	--
+	-- (3) recursively compute g(cone) from g0(cone)
+	--
+	), eva AS (
+  	  SELECT cone.id
+	  , cone.parent
+	  , cone.depth
+	  , 1 :: int AS height
+	  , g0.g0 AS g
+	  , '{}' :: text[] AS sub_gs
+	  FROM g0 JOIN cone ON g0.id = cone.id
+	UNION ALL
+	  SELECT id
+	  , parent
+	  , depth
+	  , height
+	  , g
+	  , sub_gs
+	  FROM (
+	    SELECT cone.id
+	    , cone.parent
+	    , cone.depth
+	    , eva.height + 1 AS height
+	    , g0.g0 - max(eva.g)        OVER w AS g
+	    , array_agg(to_text(eva.g)) OVER w AS sub_gs
+	    , row_number()              OVER w AS n
+	    FROM cone
+	    JOIN eva ON cone.id = eva.parent
+	    JOIN g0 ON cone.id = g0.id
+	    WINDOW w AS (PARTITION BY cone.id)
+	    --
+	    -- Note: we are simulating an aggregate via a Window
+	    -- function followed by a select, because the current CTE
+	    -- implementation forbids the former but not the latter.
+	    -- 
+	  ) a
+	  WHERE n = 1
 	), informed_choices AS (
-	  SELECT choice,
-	  avg(gain) AS total_gain,
-	  array_agg(to_text(gain)) AS gains
-	  FROM paths
-	  GROUP BY choice
+	  SELECT id
+	  , g
+	  , sub_gs
+	  FROM (
+	    SELECT id
+	    , g
+	    , sub_gs
+	    , height
+	    , max(height) OVER () AS max_height
+	    FROM eva
+	  ) a
+	  WHERE height = max_height
 	)
 	INSERT INTO choices
-	SELECT * FROM informed_choices;
+	SELECT id, g, sub_gs
+	FROM informed_choices;
 END;
 $BODY$;
 

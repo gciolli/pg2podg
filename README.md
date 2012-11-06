@@ -1,4 +1,4 @@
-pg2podg 0.1.2
+pg2podg 0.1.3
 =============
 
 pg2podg is a PostgreSQL 9.1+ extension for two-player open deterministic

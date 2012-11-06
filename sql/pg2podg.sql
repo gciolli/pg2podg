@@ -533,6 +533,9 @@ $BODY$
 DECLARE
 	cone_vertex int;
 	t timestamp with time zone;
+	v_research_time interval;
+	v_evaluate_time interval;
+	v_give_up boolean;
 BEGIN
 	SELECT id
 	INTO STRICT cone_vertex
@@ -543,14 +546,22 @@ BEGIN
 	  , time_target  := time_target
 	  , depth_target := depth_target
 	  );
-	UPDATE status
-	SET research_time = clock_timestamp() - t;
+	v_research_time := clock_timestamp() - t;
 	t := clock_timestamp();
 	PERFORM compute_gains();
+	v_evaluate_time := clock_timestamp() - t;
+	v_give_up := NOT apply_best_choice(depth_target);
 	UPDATE status
-	SET evaluate_time = clock_timestamp() - t;
-	UPDATE status
-	SET give_up = NOT apply_best_choice(depth_target);
+	SET
+	  ( research_time
+	  , evaluate_time
+	  , give_up
+	  )
+	= ( v_research_time
+	  , v_evaluate_time
+	  , v_give_up
+	  )
+	;
 END;
 $BODY$;
 
